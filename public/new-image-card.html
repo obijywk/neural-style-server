@@ -3,6 +3,7 @@
 <link rel="import" href="bower_components/iron-image/iron-image.html">
 <link rel="import" href="bower_components/paper-button/paper-button.html">
 <link rel="import" href="bower_components/paper-card/paper-card.html">
+<link rel="import" href="bower_components/paper-progress/paper-progress.html">
 
 <dom-module id="new-image-card">
   <template>
@@ -23,6 +24,11 @@
         width: 192px;
         height: 192px;
         border: 1px solid #666;
+      }
+
+      paper-progress {
+        width: 100%;
+        margin: 8px;
       }
     </style>
     <paper-card heading="Create New Image">
@@ -49,7 +55,13 @@
         </div>
       </div>
       <div class="card-actions">
-        <paper-button>Start</paper-button>
+        <paper-progress value="{{ uploadProgress_ }}"></paper-progress>
+        <paper-button
+           id="startButton"
+           disabled="{{ startButtonDisabled_ }}"
+           on-tap="start_">
+          Start
+        </paper-button>
       </div>
     </paper-card>
   </template>
@@ -59,6 +71,49 @@
       Polymer({
         is: 'new-image-card',
         properties: {
+          contentFile_: {
+            type: Object,
+            value: null,
+          },
+          styleFile_: {
+            type: Object,
+            value: null,
+          },
+          uploading_: {
+            type: Boolean,
+            value: false,
+          },
+          contentUploadProgress_: {
+            type: Number,
+            value: 0,
+          },
+          styleUploadProgress_: {
+            type: Number,
+            value: 0,
+          },
+          uploadProgress_: {
+            type: Number,
+            computed: 'computeUploadProgress_(contentUploadProgress_, styleUploadProgress_)',
+          },
+          startButtonDisabled_: {
+            type: Boolean,
+            computed: 'computeStartButtonDisabled_(contentFile_, styleFile_, uploading_)',
+          },
+        },
+        computeUploadProgress_: function(contentUploadProgress, styleUploadProgress) {
+          return (contentUploadProgress + styleUploadProgress) / 2;
+        },
+        computeStartButtonDisabled_: function(contentFile, styleFile, uploading) {
+          return contentFile == null || styleFile == null || uploading;
+        },
+        reset_: function() {
+          this.set('contentFile_', null);
+          this.set('styleFile_', null);
+          this.set('uploading_', false);
+          this.set('contentUploadProgress_', 0);
+          this.set('styleUploadProgress_', 0);
+          this.$.contentImagePreview.src = '';
+          this.$.styleImagePreview.src = '';
         },
         chooseContentImage_: function() {
           this.$.contentFileInput.click();
@@ -67,23 +122,62 @@
           this.$.styleFileInput.click();
         },
         contentFileChanged_: function() {
-          this.previewImage_(this.$.contentFileInput.files, this.$.contentImagePreview);
+          this.handleFileInput_('contentFile_', this.$.contentFileInput.files, this.$.contentImagePreview);
         },
         styleFileChanged_: function() {
-          this.previewImage_(this.$.styleFileInput.files, this.$.styleImagePreview);
+          this.handleFileInput_('styleFile_', this.$.styleFileInput.files, this.$.styleImagePreview);
         },
-        previewImage_: function(files, imageElement) {
+        handleFileInput_: function(fileProperty, files, imageElement) {
+          this.set(fileProperty, null);
           if (files.length != 1) {
             return;
           }
           if (!files[0].type.startsWith('image/')) {
             return;
           }
+          this.set(fileProperty, files[0]);
           var reader = new FileReader();
           reader.onload = function(event) {
             imageElement.src = event.target.result;
           };
           reader.readAsDataURL(files[0]);
+        },
+        start_: function() {
+          this.set('uploading_', true);
+          var id = Math.round(Math.random() * Math.pow(10, 16));
+          this.uploadImage_(this.contentFile_, id, 'content');
+          this.uploadImage_(this.styleFile_, id, 'style');
+        },
+        uploadImage_: function(file, id, purpose) {
+          var xhr = new XMLHttpRequest();
+          xhr.upload.addEventListener('progress', function(event) {
+            if (event.lengthComputable) {
+              var percentage = Math.round((event.loaded * 100) / event.total);
+              if (purpose == 'content') {
+                this.set('contentUploadProgress_', percentage);
+              }
+              if (purpose == 'style') {
+                this.set('styleUploadProgress_', percentage);
+              }
+            }
+          }.bind(this), false);
+          xhr.upload.addEventListener('load', function(event) {
+            if (purpose == 'content') {
+              this.set('contentUploadProgress_', 100);
+            }
+            if (purpose == 'style') {
+              this.set('styleUploadProgress_', 100);
+            }
+            if (this.contentUploadProgress_ == 100 && this.styleUploadProgress_ == 100) {
+              this.reset_();
+            }
+          }.bind(this), false);
+          xhr.open('POST', '/upload/' + id + '/' + purpose);
+          var reader = new FileReader();
+          reader.onload = function(event) {
+            xhr.send(event.target.result);
+          };
+          reader.readAsBinaryString(file);
         },
       });
     })();
