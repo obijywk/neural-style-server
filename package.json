@@ -1,0 +1,21 @@
+{
+  "name": "neural-style-server",
+  "version": "0.0.0",
+  "description": "A web server frontend for https://github.com/jcjohnson/neural-style",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/obijywk/neural-style-server.git"
+  },
+  "author": "Matt Gruskin",
+  "bugs": {
+    "url": "https://github.com/obijywk/neural-style-server/issues"
+  },
+  "dependencies": {
+    "express": "~4.13.3",
+    "morgan": "~1.6.1"
+  }
+}

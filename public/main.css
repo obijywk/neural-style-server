@@ -1,0 +1,22 @@
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #fafafa;
+  font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #333;
+}
+
+paper-scroll-header-panel {
+  height: 100%;
+}
+
+paper-card {
+  margin: 16px;
+}
+
+.hidden {
+  display: none;
+}

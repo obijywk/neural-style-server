@@ -1,0 +1,91 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+
+<link rel="import" href="bower_components/iron-image/iron-image.html">
+<link rel="import" href="bower_components/paper-button/paper-button.html">
+<link rel="import" href="bower_components/paper-card/paper-card.html">
+
+<dom-module id="new-image-card">
+  <template>
+    <style>
+      .create-new-image-content {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .image-picker {
+        margin: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .input-image {
+        width: 192px;
+        height: 192px;
+        border: 1px solid #666;
+      }
+    </style>
+    <paper-card heading="Create New Image">
+      <div class="card-content create-new-image-content">
+        <div class="image-picker">
+          <iron-image id="contentImagePreview" class="input-image" sizing="contain"></iron-image>
+          <input
+             type="file"
+             id="contentFileInput"
+             class="hidden"
+             accept="image/*"
+             on-change="contentFileChanged_">
+          <paper-button on-tap="chooseContentImage_">Choose Content Image</paper-button>
+        </div>
+        <div class="image-picker">
+          <iron-image id="styleImagePreview" class="input-image" sizing="contain"></iron-image>
+          <input
+             type="file"
+             id="styleFileInput"
+             class="hidden"
+             accept="image/*"
+             on-change="styleFileChanged_">
+          <paper-button on-tap="chooseStyleImage_">Choose Style Image</paper-button>
+        </div>
+      </div>
+      <div class="card-actions">
+        <paper-button>Start</paper-button>
+      </div>
+    </paper-card>
+  </template>
+  <script>
+    (function() {
+      'use strict';
+      Polymer({
+        is: 'new-image-card',
+        properties: {
+        },
+        chooseContentImage_: function() {
+          this.$.contentFileInput.click();
+        },
+        chooseStyleImage_: function() {
+          this.$.styleFileInput.click();
+        },
+        contentFileChanged_: function() {
+          this.previewImage_(this.$.contentFileInput.files, this.$.contentImagePreview);
+        },
+        styleFileChanged_: function() {
+          this.previewImage_(this.$.styleFileInput.files, this.$.styleImagePreview);
+        },
+        previewImage_: function(files, imageElement) {
+          if (files.length != 1) {
+            return;
+          }
+          if (!files[0].type.startsWith('image/')) {
+            return;
+          }
+          var reader = new FileReader();
+          reader.onload = function(event) {
+            imageElement.src = event.target.result;
+          };
+          reader.readAsDataURL(files[0]);
+        },
+      });
+    })();
+  </script>
+</dom-module>
