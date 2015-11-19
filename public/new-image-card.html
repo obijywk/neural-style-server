@@ -173,11 +173,12 @@
             }
           }.bind(this), false);
           xhr.open('POST', '/upload/' + id + '/' + purpose);
+          xhr.setRequestHeader('Content-Type', 'application/octet-stream');
           var reader = new FileReader();
           reader.onload = function(event) {
             xhr.send(event.target.result);
           };
-          reader.readAsBinaryString(file);
+          reader.readAsArrayBuffer(file);
         },
       });
     })();
