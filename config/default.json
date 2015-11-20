@@ -1,3 +1,4 @@
 {
-  "dataPath": "/tmp/neural-style-server/"
+  "dataPath": "/tmp/neural-style-server/",
+  "neuralStylePath": "/home/matt/neural/neural-style/"
 }
