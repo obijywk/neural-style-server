@@ -55,13 +55,13 @@
         </div>
       </div>
       <div class="card-actions">
-        <paper-progress value="{{ uploadProgress_ }}"></paper-progress>
         <paper-button
            id="startButton"
            disabled="{{ startButtonDisabled_ }}"
            on-tap="start_">
           Start
         </paper-button>
+        <paper-progress id="uploadProgress" class="hidden" value="{{ uploadProgress_ }}"></paper-progress>
       </div>
     </paper-card>
   </template>
@@ -120,6 +120,7 @@
         },
         reset_: function() {
           this.set('uploading_', false);
+          this.$.uploadProgress.classList.add('hidden');
           this.set('id_', null);
           this.set('contentUploadProgress_', 0);
           this.set('styleUploadProgress_', 0);
@@ -155,6 +156,7 @@
         },
         start_: function() {
           this.set('uploading_', true);
+          this.$.uploadProgress.classList.remove('hidden');
           this.set('id_', Math.round(Math.random() * Math.pow(10, 16)));
           this.uploadImage_(this.contentFile_, 'content');
           this.uploadImage_(this.styleFile_, 'style');

@@ -1,0 +1,105 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+
+<link rel="import" href="bower_components/iron-image/iron-image.html">
+<link rel="import" href="bower_components/paper-card/paper-card.html">
+<link rel="import" href="bower_components/paper-slider/paper-slider.html">
+
+<dom-module id="output-card">
+  <template>
+    <style>
+      .output-paper-card {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .source-images-column {
+        margin: 16px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .source-image {
+        width: 192px;
+        height: 192px;
+        border: 1px solid #666;
+        margin-top: 8px;
+        margin-bottom: 8px;
+      }
+
+      .output-column {
+        margin: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+    </style>
+    <paper-card class="output-paper-card">
+      <div class="source-images-column">
+        <iron-image class="source-image" sizing="contain" src="{{ status.contentUrl }}">
+        </iron-image>
+        <iron-image class="source-image" sizing="contain" src="{{ status.styleUrl }}">
+        </iron-image>
+      </div>
+      <div class="output-column">
+        <div>{{ status.state }}</div>
+        <div>
+          <span>{{ status.iter }}</span>
+          /
+          <span>{{ status.settings.numIterations }}</span>
+        </div>
+        <iron-image src="{{ outputUrl }}"></iron-image>
+        <paper-slider
+           min="0"
+           max="{{ outputUrlIndexMax_ }}"
+           value="{{ outputUrlIndex_ }}">
+        </paper-slider>
+      </div>
+    </paper-card>
+  </template>
+  <script src="underscore-min.js"></script>
+  <script>
+    (function() {
+      'use strict';
+      Polymer({
+        is: 'output-card',
+        properties: {
+          status: {
+            type: Object,
+            value: null,
+            observer: 'statusChanged_',
+          },
+          outputUrlIndex_: {
+            type: Number,
+            value: 0,
+          },
+          outputUrlIndexMax_: {
+            type: Number,
+            value: 0,
+          },
+          outputUrl: {
+            type: String,
+            computed: 'makeOutputUrl_(status.outputUrls, outputUrlIndex_)',
+          },
+        },
+        statusChanged_: function(newStatus, oldStatus) {
+          if (oldStatus == null) {
+            this.set('outputUrlIndexMax_', newStatus.outputUrls.length - 1);
+            this.set('outputUrlIndex_', newStatus.outputUrls.length - 1);
+          } else if (newStatus.outputUrls.length != oldStatus.outputUrls.length) {
+            this.set('outputUrlIndexMax_', newStatus.outputUrls.length - 1);
+            if (this.outputUrlIndex_ == oldStatus.outputUrls.length - 1) {
+              this.set('outputUrlIndex_', newStatus.outputUrls.length - 1);
+            }
+          }
+        },
+        makeOutputUrl_: function(outputUrls, outputUrlIndex) {
+          if (!outputUrls || outputUrls.length == 0) {
+            return '';
+          }
+          return outputUrls[outputUrlIndex];
+        },
+      });
+    })();
+  </script>
+</dom-module>

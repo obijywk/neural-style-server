@@ -1,0 +1,32 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+
+<link rel="import" href="new-image-card.html">
+<link rel="import" href="output-cards.html">
+
+<dom-module id="main-page">
+  <template>
+    <new-image-card></new-image-card>
+    <output-cards id="outputCards"></output-cards>
+  </template>
+  <script src="underscore-min.js"></script>
+  <script>
+    (function() {
+      'use strict';
+      Polymer({
+        is: 'main-page',
+        attached: function() {
+          var location = window.location;
+          var wsUrl = 'ws://' + location.hostname + ':' + location.port + '/updates';
+          this.updatesSocket_ = new WebSocket(wsUrl);
+          this.updatesSocket_.onmessage = this.handleUpdate_.bind(this);
+        },
+        handleUpdate_: function(event) {
+          var msg = JSON.parse(event.data);
+          if (msg.type == 'render') {
+            this.$.outputCards.handleUpdate(msg.data);
+          }
+        },
+      })
+    })();
+  </script>
+</dom-module>
