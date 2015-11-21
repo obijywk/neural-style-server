@@ -5,6 +5,8 @@
 <link rel="import" href="bower_components/paper-card/paper-card.html">
 <link rel="import" href="bower_components/paper-progress/paper-progress.html">
 
+<link rel="import" href="render-settings.html">
+
 <dom-module id="new-image-card">
   <template>
     <style>
@@ -30,6 +32,11 @@
         width: 192px;
         height: 192px;
         border: 1px solid #666;
+      }
+
+      .action-buttons {
+        display: flex;
+        flex-direction: row;
       }
 
       paper-progress {
@@ -59,14 +66,21 @@
              on-change="styleFileChanged_">
           <paper-button on-tap="chooseStyleImage_">Choose Style Image</paper-button>
         </div>
+        <render-settings id="renderSettings"></render-settings>
       </div>
       <div class="card-actions">
-        <paper-button
-           id="startButton"
-           disabled="{{ startButtonDisabled_ }}"
-           on-tap="start_">
-          Start
-        </paper-button>
+        <div class="action-buttons">
+          <paper-button
+             disabled="{{ startButtonDisabled_ }}"
+             on-tap="start_">
+            Start
+          </paper-button>
+          <paper-button
+             disabled="{{ uploading_ }}"
+             on-tap="reset_">
+            Reset
+          </paper-button>
+        </div>
         <paper-progress id="uploadProgress" class="hidden" value="{{ uploadProgress_ }}"></paper-progress>
       </div>
     </paper-card>
@@ -124,7 +138,7 @@
         computeStartButtonDisabled_: function(contentFile, styleFile, uploading) {
           return contentFile == null || styleFile == null || uploading;
         },
-        reset_: function() {
+        finishUpload_: function() {
           this.set('uploading_', false);
           this.$.uploadProgress.classList.add('hidden');
           this.set('id_', null);
@@ -132,6 +146,14 @@
           this.set('styleUploadProgress_', 0);
           this.set('contentUploadDone_', false);
           this.set('styleUploadDone_', false);
+        },
+        reset_: function() {
+          this.finishUpload_();
+          this.$.renderSettings.reset();
+          this.set('contentFile_', null);
+          this.$.contentImagePreview.src = '';
+          this.set('styleFile_', null);
+          this.$.styleImagePreview.src = '';
         },
         chooseContentImage_: function() {
           this.$.contentFileInput.click();
@@ -180,7 +202,7 @@
             this.set(purpose + 'UploadDone_', true);
             if (this.contentUploadDone_ && this.styleUploadDone_) {
               this.render_();
-              this.reset_();
+              this.finishUpload_();
             }
           }.bind(this), false);
           xhr.open('POST', '/upload/' + this.id_ + '/' + purpose);
