@@ -53,6 +53,15 @@ app.ws('/updates', function(ws, req) {
     var index = updateSockets.indexOf(ws);
     updateSockets.splice(index, 1);
   });
+  process.nextTick(function() {
+    if (_.findIndex(updateSockets, ws) == -1) {
+      return;
+    }
+    var taskStatuses = neuralStyleRenderer.getTaskStatuses();
+    for (var i = taskStatuses.length - 1; i >= 0; i--) {
+      ws.send(JSON.stringify({'type': 'render', 'data': taskStatuses[i]}));
+    }
+  });
 });
 
 function broadcastUpdate(type, data) {

@@ -36,7 +36,7 @@ exports.RUNNING = 'running';
 exports.DONE = 'done';
 exports.FAILED = 'failed';
 
-function runTaskCallback(task) {
+function getTaskStatus(task) {
   var status = {
     'id': task.id,
     'contentUrl': neuralStyleUtil.imagePathToUrl(task.contentPath),
@@ -56,7 +56,11 @@ function runTaskCallback(task) {
     status['outputUrls'].push(neuralStyleUtil.imagePathToUrl(outputPath + '.png'));
   }
 
-  task.callback(null, status);
+  return status;
+}
+
+function runTaskCallback(task) {
+  task.callback(null, getTaskStatus(task));
 }
 
 function runRender(task, callback) {
@@ -161,3 +165,7 @@ function enqueueJob(id, callback) {
   });
 }
 exports.enqueueJob = enqueueJob;
+
+exports.getTaskStatuses = function() {
+  return _.map(tasks, getTaskStatus);
+}
