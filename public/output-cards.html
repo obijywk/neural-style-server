@@ -1,0 +1,61 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+
+<dom-module id="output-cards">
+  <template>
+    <template is="dom-repeat" items="{{ statusArray }}">
+      <paper-card>
+        <div>
+          <span>{{ item.state }}</span>
+          (
+          <span>{{ item.iter }}</span>
+          /
+          <span>{{ item.settings.numIterations }}</span>
+          )
+        </div>
+        <div>
+          <img src="{{ item.contentUrl }}" width="192px">
+          <img src="{{ item.styleUrl }}" width="192px">
+          <img src="{{ item.outputUrl }}">
+        </div>
+      </paper-card>
+    </template>
+  </template>
+  <script src="underscore-min.js"></script>
+  <script>
+    (function() {
+      'use strict';
+      Polymer({
+        is: 'output-cards',
+        properties: {
+          statusArray: {
+            type: Array,
+            value: function() { return []; },
+          },
+        },
+        attached: function() {
+          var location = window.location;
+          var wsUrl = 'ws://' + location.hostname + ':' + location.port + '/updates';
+          this.updatesSocket_ = new WebSocket(wsUrl);
+          this.updatesSocket_.onmessage = this.handleUpdate_.bind(this);
+        },
+        handleUpdate_: function(event) {
+          var msg = JSON.parse(event.data);
+          if (msg.type == 'render') {
+            var status = msg.data;
+            if (status.outputUrls.length > 0) {
+              status.outputUrl = status.outputUrls[status.outputUrls.length - 1];
+            }
+            var index = _.findIndex(this.statusArray, function(existingStatus) {
+              return existingStatus.id == status.id;
+            });
+            if (index == -1) {
+              this.unshift('statusArray', status);
+            } else {
+              this.splice('statusArray', index, 1, status);
+            }
+          }
+        },
+      })
+    })();
+  </script>
+</dom-module>

@@ -17,14 +17,14 @@ exports.CONTENT = 'content';
 exports.STYLE = 'style';
 exports.OUTPUT = 'output';
 
-exports.getImageBasePath = function(id, purpose) {
+exports.getImagePathPrefix = function(id, purpose) {
   return path.join(
     config.get('dataPath'),
     id + '_' + purpose);
 }
 
 exports.saveImage = function(id, purpose, data, callback) {
-  var outputPath = exports.getImageBasePath(id, purpose);
+  var outputPath = exports.getImagePathPrefix(id, purpose);
   async.waterfall([
     function(cb) {
       fs.writeFile(outputPath, data, cb);
@@ -49,10 +49,10 @@ exports.saveImage = function(id, purpose, data, callback) {
 }
 
 exports.findImagePath = function(id, purpose, callback) {
-  var basePath = exports.getImageBasePath(id, purpose);
+  var pathPrefix = exports.getImagePathPrefix(id, purpose);
   function makeExtensionCheck(ext) {
     return function(cb) {
-      var path = basePath + '.' + ext;
+      var path = pathPrefix + '.' + ext;
       fs.stat(path, function(err, stats) {
         if (!err) {
           cb(null, path);
@@ -76,9 +76,14 @@ exports.findImagePath = function(id, purpose, callback) {
     if (result) {
       callback(null, result);
     } else {
-      callback(new Error('Missing image with base path ' + basePath));
+      callback(new Error('Missing image with path prefix ' + pathPrefix));
     }
   });
+}
+
+exports.imagePathToUrl = function(imagePath) {
+  var filename = path.basename(imagePath);
+  return path.join('/data', filename);
 }
 
 exports.validateId = function(id) {

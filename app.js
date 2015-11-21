@@ -1,12 +1,15 @@
+var _ = require('underscore');
 var async = require('async');
 var bodyParser = require('body-parser');
 var config = require('config');
 var express = require('express');
+var expressWs = require('express-ws');
 var morgan = require('morgan');
 var neuralStyleRenderer = require('./neural-style-renderer');
 var neuralStyleUtil = require('./neural-style-util');
 
 var app = express();
+expressWs(app);
 app.use(morgan('short'));
 
 app.use(express.static('public'));
@@ -36,11 +39,27 @@ app.post('/render/:id', function(req, res) {
   neuralStyleRenderer.enqueueJob(req.params.id, function(err, status) {
     if (err) {
       console.log(err);
+      return;
     }
-    console.log(status);
+    broadcastUpdate('render', status);
   });
   res.end();
 });
+
+var updateSockets = [];
+app.ws('/updates', function(ws, req) {
+  updateSockets.push(ws);
+  ws.on('close', function() {
+    var index = updateSockets.indexOf(ws);
+    updateSockets.splice(index, 1);
+  });
+});
+
+function broadcastUpdate(type, data) {
+  _.each(updateSockets, function(ws) {
+    ws.send(JSON.stringify({'type': type, 'data': data}));
+  });
+}
 
 var server = app.listen(8000, function() {
   var host = server.address().address;

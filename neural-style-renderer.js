@@ -7,6 +7,8 @@ var path = require('path');
 var util = require('util');
 var xml2js = require('xml2js');
 
+var NUM_PROGRESS_IMAGES = 10;
+
 function queryGpus(callback) {
   var nvidiaSmi = childProcess.spawn(
     'nvidia-smi',
@@ -29,43 +31,50 @@ exports.queryGpus = queryGpus;
 
 var gpuIndexes = [];
 
+exports.QUEUED = 'queued';
 exports.RUNNING = 'running';
 exports.DONE = 'done';
 exports.FAILED = 'failed';
 
-function runRender(task, callback) {
-  var outputPath = neuralStyleUtil.getImageBasePath(task.id, neuralStyleUtil.OUTPUT);
+function runTaskCallback(task) {
+  var status = {
+    'id': task.id,
+    'contentUrl': neuralStyleUtil.imagePathToUrl(task.contentPath),
+    'styleUrl': neuralStyleUtil.imagePathToUrl(task.stylePath),
+    'settings': task.settings,
+    'state': task.state,
+    'iter': task.iter,
+    'outputUrls': [],
+  };
 
-  var numIterations = 1000;
-  var printIterStep = numIterations / 100;
-  var saveIterStep = numIterations / 10;
-
-  function makeStatus(iter) {
-    var status = {
-      'id': task.id,
-      'contentPath': task.contentPath,
-      'stylePath': task.stylePath,
-      'iter': iter,
-      'numIterations': numIterations,
-      'state': exports.RUNNING,
-    };
-    if (iter == numIterations) {
-      status['outputPath'] = outputPath + '.png';
-      status['state'] = exports.DONE;
-    } else if (iter >= saveIterStep) {
-      status['outputPath'] = outputPath + '_' + (iter - (iter % saveIterStep)) + '.png';
-    }
-    return status;
+  var outputPath = neuralStyleUtil.getImagePathPrefix(task.id, neuralStyleUtil.OUTPUT);
+  var saveIterStep = task.settings.numIterations / NUM_PROGRESS_IMAGES;
+  for (var i = saveIterStep; i < task.iter; i += saveIterStep) {
+    status['outputUrls'].push(neuralStyleUtil.imagePathToUrl(outputPath + '_' + i + '.png'));
+  }
+  if (task.state == exports.DONE) {
+    status['outputUrls'].push(neuralStyleUtil.imagePathToUrl(outputPath + '.png'));
   }
 
+  task.callback(null, status);
+}
+
+function runRender(task, callback) {
+  task.state = exports.RUNNING;
+  runTaskCallback(task);
+
+  var outputPath = neuralStyleUtil.getImagePathPrefix(task.id, neuralStyleUtil.OUTPUT);
+  var printIterStep = task.settings.numIterations / 100;
+  var saveIterStep = task.settings.numIterations / NUM_PROGRESS_IMAGES;
   var gpuIndex = gpuIndexes.shift();
+
   var params = [
     path.join(config.get('neuralStylePath'), 'neural_style.lua'),
     '-content_image', task.contentPath,
     '-style_image', task.stylePath,
-    '-image_size', '256',
+    '-image_size', task.settings.imageSize,
     '-gpu', gpuIndex,
-    '-num_iterations', numIterations,
+    '-num_iterations', task.settings.numIterations,
     '-output_image', outputPath + '.png',
     '-print_iter', printIterStep,
     '-save_iter', saveIterStep,
@@ -94,27 +103,28 @@ function runRender(task, callback) {
   var lastIter = 0;
   neuralStyle.stdout.on('data', function(data) {
     stdout += String(data);
-    var iter = getLatestIteration(stdout);
-    if (iter > lastIter) {
-      lastIter = iter;
-      var status = makeStatus(iter);
-      task.callback(null, status);
+    task.iter = getLatestIteration(stdout);
+    if (task.iter > lastIter) {
+      lastIter = task.iter;
+      runTaskCallback(task);
     }
   });
 
   neuralStyle.on('exit', function(code) {
     gpuIndexes.push(gpuIndex);
-    var status = makeStatus(lastIter);
     if (code != 0) {
       util.log('neural_style failed with code ' + code + '\n' + neuralStyle.stderr.read());
-      status['state'] = exports.FAILED;
+      task.state = exports.FAILED;
+    } else {
+      task.state = exports.DONE;
     }
-    task.callback(null, status);
+    runTaskCallback(task);
     callback();
   });
 }
 
 var workqueue;
+var tasks = [];
 queryGpus(function(gpuInfo) {
   gpuIndexes = _.range(gpuInfo.attached_gpus[0]);
   workqueue = async.queue(runRender, gpuInfo.attached_gpus[0]);
@@ -133,12 +143,21 @@ function enqueueJob(id, callback) {
       callback(err);
       return;
     }
-    workqueue.push({
+    var task = {
       'id': id,
+      'state': exports.QUEUED,
       'callback': callback,
       'contentPath': results[0],
       'stylePath': results[1],
-    });
+      'settings': {
+        'imageSize': 256,
+        'numIterations': 1000,
+      },
+      'iter': 0,
+    };
+    runTaskCallback(task);
+    tasks.unshift(task);
+    workqueue.push(task);
   });
 }
 exports.enqueueJob = enqueueJob;

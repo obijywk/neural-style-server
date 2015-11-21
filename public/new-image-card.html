@@ -71,6 +71,10 @@
       Polymer({
         is: 'new-image-card',
         properties: {
+          id_: {
+            type: String,
+            value: null,
+          },
           contentFile_: {
             type: Object,
             value: null,
@@ -91,6 +95,14 @@
             type: Number,
             value: 0,
           },
+          contentUploadDone_: {
+            type: Boolean,
+            value: false,
+          },
+          styleUploadDone_: {
+            type: Boolean,
+            value: false,
+          },
           uploadProgress_: {
             type: Number,
             computed: 'computeUploadProgress_(contentUploadProgress_, styleUploadProgress_)',
@@ -107,13 +119,12 @@
           return contentFile == null || styleFile == null || uploading;
         },
         reset_: function() {
-          this.set('contentFile_', null);
-          this.set('styleFile_', null);
           this.set('uploading_', false);
+          this.set('id_', null);
           this.set('contentUploadProgress_', 0);
           this.set('styleUploadProgress_', 0);
-          this.$.contentImagePreview.src = '';
-          this.$.styleImagePreview.src = '';
+          this.set('contentUploadDone_', false);
+          this.set('styleUploadDone_', false);
         },
         chooseContentImage_: function() {
           this.$.contentFileInput.click();
@@ -144,41 +155,38 @@
         },
         start_: function() {
           this.set('uploading_', true);
-          var id = Math.round(Math.random() * Math.pow(10, 16));
-          this.uploadImage_(this.contentFile_, id, 'content');
-          this.uploadImage_(this.styleFile_, id, 'style');
+          this.set('id_', Math.round(Math.random() * Math.pow(10, 16)));
+          this.uploadImage_(this.contentFile_, 'content');
+          this.uploadImage_(this.styleFile_, 'style');
         },
-        uploadImage_: function(file, id, purpose) {
+        uploadImage_: function(file, purpose) {
           var xhr = new XMLHttpRequest();
           xhr.upload.addEventListener('progress', function(event) {
             if (event.lengthComputable) {
               var percentage = Math.round((event.loaded * 100) / event.total);
-              if (purpose == 'content') {
-                this.set('contentUploadProgress_', percentage);
-              }
-              if (purpose == 'style') {
-                this.set('styleUploadProgress_', percentage);
-              }
+              this.set(purpose + 'UploadProgress_', percentage);
             }
           }.bind(this), false);
-          xhr.upload.addEventListener('load', function(event) {
-            if (purpose == 'content') {
-              this.set('contentUploadProgress_', 100);
-            }
-            if (purpose == 'style') {
-              this.set('styleUploadProgress_', 100);
-            }
-            if (this.contentUploadProgress_ == 100 && this.styleUploadProgress_ == 100) {
+          xhr.addEventListener('load', function(event) {
+            this.set(purpose + 'UploadProgress_', 100);
+            this.set(purpose + 'UploadDone_', true);
+            if (this.contentUploadDone_ && this.styleUploadDone_) {
+              this.render_();
               this.reset_();
             }
           }.bind(this), false);
-          xhr.open('POST', '/upload/' + id + '/' + purpose);
+          xhr.open('POST', '/upload/' + this.id_ + '/' + purpose);
           xhr.setRequestHeader('Content-Type', 'application/octet-stream');
           var reader = new FileReader();
           reader.onload = function(event) {
             xhr.send(event.target.result);
           };
           reader.readAsArrayBuffer(file);
+        },
+        render_: function() {
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', '/render/' + this.id_);
+          xhr.send('');
         },
       });
     })();
