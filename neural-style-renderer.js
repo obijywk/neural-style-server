@@ -2,6 +2,7 @@ var _ = require('underscore');
 var async = require('async');
 var childProcess = require('child_process');
 var config = require('config');
+var fs = require('fs');
 var neuralStyleUtil = require('./neural-style-util');
 var path = require('path');
 var util = require('util');
@@ -79,12 +80,24 @@ function runRender(task, callback) {
     '-image_size', task.settings.imageSize,
     '-gpu', gpuIndex,
     '-num_iterations', task.settings.numIterations,
+    '-content_weight', task.settings.contentWeight,
+    '-style_weight', task.settings.styleWeight,
+    '-tv_weight', task.settings.tvWeight,
+    '-init', task.settings.init,
+    '-content_layers', task.settings.contentLayers.join(','),
+    '-style_layers', task.settings.styleLayers.join(','),
+    '-style_scale', task.settings.styleScale,
+    '-pooling', task.settings.pooling,
     '-output_image', outputPath + '.png',
     '-print_iter', printIterStep,
     '-save_iter', saveIterStep,
     '-backend', 'cudnn',
   ];
+  if (task.settings.normalizeGradients) {
+    params.push('-normalize_gradients');
+  }
 
+  util.log('Running neural_style for id ' + task.id + ' with params: ' + params);
   var neuralStyle = childProcess.spawn('th', params, {
     'cwd': config.get('neuralStylePath'),
   });
@@ -117,9 +130,10 @@ function runRender(task, callback) {
   neuralStyle.on('exit', function(code) {
     gpuIndexes.push(gpuIndex);
     if (code != 0) {
-      util.log('neural_style failed with code ' + code + '\n' + neuralStyle.stderr.read());
+      util.log('neural_style failed for id ' + task.id + ' with code ' + code + '\n' + neuralStyle.stderr.read());
       task.state = exports.FAILED;
     } else {
+      util.log('neural_style done for id ' + task.id);
       task.state = exports.DONE;
     }
     runTaskCallback(task);
@@ -134,8 +148,26 @@ queryGpus(function(gpuInfo) {
   workqueue = async.queue(runRender, gpuInfo.attached_gpus[0]);
 });
 
-function enqueueJob(id, callback) {
+var DEFAULT_SETTINGS = {
+  'imageSize': 256,
+  'numIterations': 1000,
+  'contentWeight': 5,
+  'styleWeight': 100,
+  'tvWeight': 0.001,
+  'init': 'random',
+  'normalizeGradients': false,
+  'contentLayers': ['relu4_2'],
+  'styleLayers': ['relu1_1', 'relu2_1', 'relu3_1', 'relu4_1', 'relu5_1'],
+  'styleScale': 1.0,
+  'pooling': 'max',
+};
+
+function enqueueJob(id, settings, callback) {
+  settings = _.defaults(settings, DEFAULT_SETTINGS);
   async.parallel([
+    function(cb) {
+      fs.writeFile(neuralStyleUtil.getSettingsPath(id), settings, cb);
+    },
     function(cb) {
       neuralStyleUtil.findImagePath(id, neuralStyleUtil.CONTENT, cb);
     },
@@ -151,12 +183,9 @@ function enqueueJob(id, callback) {
       'id': id,
       'state': exports.QUEUED,
       'callback': callback,
-      'contentPath': results[0],
-      'stylePath': results[1],
-      'settings': {
-        'imageSize': 256,
-        'numIterations': 1000,
-      },
+      'contentPath': results[1],
+      'stylePath': results[2],
+      'settings': settings,
       'iter': 0,
     };
     runTaskCallback(task);

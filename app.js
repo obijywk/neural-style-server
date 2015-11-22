@@ -31,12 +31,14 @@ app.post('/upload/:id/:purpose', rawBodyParser, function(req, res) {
   });
 });
 
-app.post('/render/:id', function(req, res) {
+var jsonBodyParser = bodyParser.json();
+app.post('/render/:id', jsonBodyParser, function(req, res) {
   if (!neuralStyleUtil.validateId(req.params.id)) {
     res.status(400).send('invalid id');
     return;
   }
-  neuralStyleRenderer.enqueueJob(req.params.id, function(err, status) {
+  var settings = req.body;
+  neuralStyleRenderer.enqueueJob(req.params.id, settings, function(err, status) {
     if (err) {
       console.log(err);
       return;

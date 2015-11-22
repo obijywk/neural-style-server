@@ -4,6 +4,8 @@
 <link rel="import" href="bower_components/paper-card/paper-card.html">
 <link rel="import" href="bower_components/paper-slider/paper-slider.html">
 
+<link rel="import" href="render-settings.html">
+
 <dom-module id="output-card">
   <template>
     <style>
@@ -55,6 +57,7 @@
            value="{{ outputUrlIndex_ }}">
         </paper-slider>
       </div>
+      <render-settings disabled="true" settings="{{ status.settings }}"></render-settings>
     </paper-card>
   </template>
   <script src="underscore-min.js"></script>

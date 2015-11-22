@@ -17,6 +17,12 @@ exports.CONTENT = 'content';
 exports.STYLE = 'style';
 exports.OUTPUT = 'output';
 
+exports.getSettingsPath = function(id) {
+  return path.join(
+    config.get('dataPath'),
+    id + '_settings.json');
+}
+
 exports.getImagePathPrefix = function(id, purpose) {
   return path.join(
     config.get('dataPath'),

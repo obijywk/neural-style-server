@@ -27,14 +27,15 @@
     </style>
     <div class="settings-columns">
       <div class="settings-column">
-        <paper-dropdown-menu label="Output Image Size" disabled?="{{ disabled }}">
+        <paper-dropdown-menu label="Output Image Size" disabled="{{ disabled }}">
           <paper-listbox class="dropdown-content" attr-for-selected="data-value" selected="{{ settings.imageSize }}">
             <paper-item data-value="128">128px</paper-item>
             <paper-item data-value="256">256px</paper-item>
+            <paper-item data-value="384">384px</paper-item>
             <paper-item data-value="512">512px</paper-item>
           </paper-listbox>
         </paper-dropdown-menu>
-        <paper-dropdown-menu label="Number of Iterations" disabled?="{{ disabled }}">
+        <paper-dropdown-menu label="Number of Iterations" disabled="{{ disabled }}">
           <paper-listbox class="dropdown-content" attr-for-selected="data-value" selected="{{ settings.numIterations }}">
             <paper-item data-value="500">500</paper-item>
             <paper-item data-value="1000">1000</paper-item>
@@ -42,13 +43,13 @@
             <paper-item data-value="2000">2000</paper-item>
           </paper-listbox>
         </paper-dropdown-menu>
-        <paper-dropdown-menu label="Initial Image" disabled?="{{ disabled }}">
+        <paper-dropdown-menu label="Initial Image" disabled="{{ disabled }}">
           <paper-listbox class="dropdown-content" attr-for-selected="data-value" selected="{{ settings.init }}">
             <paper-item data-value="random">random</paper-item>
             <paper-item data-value="image">content image</paper-item>
           </paper-listbox>
         </paper-dropdown-menu>
-        <paper-dropdown-menu label="Pooling" disabled?="{{ disabled }}">
+        <paper-dropdown-menu label="Pooling" disabled="{{ disabled }}">
           <paper-listbox class="dropdown-content" attr-for-selected="data-value" selected="{{ settings.pooling }}">
             <paper-item data-value="avg">average</paper-item>
             <paper-item data-value="max">max</paper-item>
@@ -61,28 +62,28 @@
            value="{{ settings.contentWeight }}"
            min="0.001"
            max="100"
-           disabled?="{{ disabled }}">
+           disabled="{{ disabled }}">
         </labeled-log-slider>
         <labeled-log-slider
            label="Style Weight"
            value="{{ settings.styleWeight }}"
            min="0.001"
            max="100"
-           disabled?="{{ disabled }}">
+           disabled="{{ disabled }}">
         </labeled-log-slider>
         <labeled-log-slider
            label="Style Scale"
            value="{{ settings.styleScale }}"
            min="0.1"
            max="10"
-           disabled?="{{ disabled }}">
+           disabled="{{ disabled }}">
         </labeled-log-slider>
         <labeled-log-slider
            label="TV Regularization Weight"
            value="{{ settings.tvWeight }}"
            min="0.0001"
            max="1"
-           disabled?="{{ disabled }}">
+           disabled="{{ disabled }}">
         </labeled-log-slider>
       </div>
     </div>
@@ -90,8 +91,8 @@
   <script>
     function makeDefaultSettings() {
       return {
-        'imageSize': '256',
-        'numIterations': '1000',
+        'imageSize': 256,
+        'numIterations': 1000,
         'contentWeight': 5,
         'styleWeight': 100,
         'tvWeight': 0.001,
@@ -118,8 +119,21 @@
             value: makeDefaultSettings,
           },
         },
+        observers: [
+          'settingsChanged_(settings.*)'
+        ],
         reset: function() {
           this.set('settings', makeDefaultSettings());
+        },
+        settingsChanged_: function(changeRecord) {
+          var fixNumericSetting = function(name) {
+            if (typeof(this.settings[name]) == 'string') {
+              this.settings[name] = Number(this.settings[name]);
+              this.notifyPath('settings.' + name, this.settings[name]);
+            }
+          }.bind(this);
+          fixNumericSetting('imageSize');
+          fixNumericSetting('numIterations');
         },
       });
     })();
