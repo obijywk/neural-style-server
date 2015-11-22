@@ -1,5 +1,6 @@
 <link rel="import" href="bower_components/polymer/polymer.html">
 
+<link rel="import" href="bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
 <link rel="import" href="bower_components/paper-item/paper-item.html">
 <link rel="import" href="bower_components/paper-listbox/paper-listbox.html">
@@ -55,6 +56,9 @@
             <paper-item data-value="max">max</paper-item>
           </paper-listbox>
         </paper-dropdown-menu>
+        <paper-checkbox checked="{{ settings.normalizeGradients }}" disabled="{{ disabled }}">
+          Normalize Gradients
+        </paper-checkbox>
       </div>
       <div class="settings-column">
         <labeled-log-slider
