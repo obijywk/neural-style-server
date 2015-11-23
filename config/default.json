@@ -1,4 +1,5 @@
 {
+  "port": 8000,
   "dataPath": "/tmp/neural-style-server/",
   "neuralStylePath": "/home/matt/neural/neural-style/",
   "username": "user",

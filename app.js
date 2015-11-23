@@ -95,7 +95,7 @@ neuralStyleRenderer.statusEventEmitter.on('status', function(status) {
   broadcastUpdate('status', status);
 });
 
-var server = app.listen(8000, function() {
+var server = app.listen(config.get('port'), function() {
   var host = server.address().address;
   var port = server.address().port;
   console.log('Listening at http://%s:%s', host, port);
