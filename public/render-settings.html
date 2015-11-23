@@ -6,6 +6,7 @@
 <link rel="import" href="bower_components/paper-listbox/paper-listbox.html">
 
 <link rel="import" href="labeled-log-slider.html">
+<link rel="import" href="layer-picker.html">
 
 <dom-module id="render-settings">
   <template>
@@ -23,7 +24,17 @@
       }
 
       labeled-log-slider {
-        padding: 8px;
+        padding-top: 8px;
+        padding-bottom: 6px;
+      }
+
+      layer-picker {
+        padding-top: 8px;
+        padding-bottom: 6px;
+      }
+
+      .normalize-gradients {
+        font-size: 12px;
       }
     </style>
     <div class="settings-columns">
@@ -56,7 +67,12 @@
             <paper-item data-value="max">max</paper-item>
           </paper-listbox>
         </paper-dropdown-menu>
-        <paper-checkbox checked="{{ settings.normalizeGradients }}" disabled="{{ disabled }}">
+        <layer-picker
+           label="Content Layers"
+           layers="{{ settings.contentLayers }}"
+           disabled="{{ disabled }}">
+        </layer-picker>
+        <paper-checkbox class="normalize-gradients" checked="{{ settings.normalizeGradients }}" disabled="{{ disabled }}">
           Normalize Gradients
         </paper-checkbox>
       </div>
@@ -89,6 +105,11 @@
            max="1"
            disabled="{{ disabled }}">
         </labeled-log-slider>
+        <layer-picker
+           label="Style Layers"
+           layers="{{ settings.styleLayers }}"
+           disabled="{{ disabled }}">
+        </layer-picker>
       </div>
     </div>
   </template>

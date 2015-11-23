@@ -1,0 +1,135 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+
+<link rel="import" href="bower_components/paper-button/paper-button.html">
+<link rel="import" href="bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="bower_components/paper-item/paper-item.html">
+<link rel="import" href="bower_components/paper-listbox/paper-listbox.html">
+
+<dom-module id="layer-picker">
+  <template>
+    <style>
+      .label-text {
+        color: #757575;
+        font-size: 12px;
+      }
+
+      .layers-button {
+        font-size: 12px;
+      }
+
+      paper-listbox {
+        width: 300px;
+      }
+    </style>
+
+    <paper-dialog id="layersDialog" modal>
+      <h2>Choose <span>{{ label }}</span></h2>
+      <div>{{ layersText_ }}</div>
+      <paper-dialog-scrollable>
+        <paper-listbox multi attr-for-selected="data-value" selected-values="{{ layers }}">
+          <paper-item data-value="conv1_1">Convolution 1-1 (64 params)</paper-item>
+          <paper-item data-value="relu1_1">Rectifier 1-1 (64 params)</paper-item>
+          <paper-item data-value="conv1_2">Convolution 1-2 (64 params)</paper-item>
+          <paper-item data-value="relu1_2">Rectifier 1-2 (64 params)</paper-item>
+          <paper-item data-value="pool1">Pooling 1 (64 params)</paper-item>
+          <paper-item data-value="conv2_1">Convolution 2-1 (128 params)</paper-item>
+          <paper-item data-value="relu2_1">Rectifier 2-1 (128 params)</paper-item>
+          <paper-item data-value="conv2_2">Convolution 2-2 (128 params)</paper-item>
+          <paper-item data-value="relu2_2">Rectifier 2-2 (128 params)</paper-item>
+          <paper-item data-value="pool2">Pooling 2 (128 params)</paper-item>
+          <paper-item data-value="conv3_1">Convolution 3-1 (256 params)</paper-item>
+          <paper-item data-value="relu3_1">Rectifier 3-1 (256 params)</paper-item>
+          <paper-item data-value="conv3_2">Convolution 3-2 (256 params)</paper-item>
+          <paper-item data-value="relu3_2">Rectifier 3-2 (256 params)</paper-item>
+          <paper-item data-value="conv3_3">Convolution 3-3 (256 params)</paper-item>
+          <paper-item data-value="relu3_3">Rectifier 3-3 (256 params)</paper-item>
+          <paper-item data-value="conv3_4">Convolution 3-4 (256 params)</paper-item>
+          <paper-item data-value="relu3_4">Rectifier 3-4 (256 params)</paper-item>
+          <paper-item data-value="pool3">Pooling 3 (256 params)</paper-item>
+          <paper-item data-value="conv4_1">Convolution 4-1 (512 params)</paper-item>
+          <paper-item data-value="relu4_1">Rectifier 4-1 (512 params)</paper-item>
+          <paper-item data-value="conv4_2">Convolution 4-2 (512 params)</paper-item>
+          <paper-item data-value="relu4_2">Rectifier 4-2 (512 params)</paper-item>
+          <paper-item data-value="conv4_3">Convolution 4-3 (512 params)</paper-item>
+          <paper-item data-value="relu4_3">Rectifier 4-3 (512 params)</paper-item>
+          <paper-item data-value="conv4_4">Convolution 4-4 (512 params)</paper-item>
+          <paper-item data-value="relu4_4">Rectifier 4-4 (512 params)</paper-item>
+          <paper-item data-value="pool4">Pooling 4 (512 params)</paper-item>
+          <paper-item data-value="conv5_1">Convolution 5-1 (512 params)</paper-item>
+          <paper-item data-value="relu5_1">Rectifier 5-1 (512 params)</paper-item>
+          <paper-item data-value="conv5_2">Convolution 5-2 (512 params)</paper-item>
+          <paper-item data-value="relu5_2">Rectifier 5-2 (512 params)</paper-item>
+          <paper-item data-value="conv5_3">Convolution 5-3 (512 params)</paper-item>
+          <paper-item data-value="relu5_3">Rectifier 5-3 (512 params)</paper-item>
+          <paper-item data-value="conv5_4">Convolution 5-4 (512 params)</paper-item>
+          <paper-item data-value="relu5_4">Rectifier 5-4 (512 params)</paper-item>
+          <paper-item data-value="pool5">Pooling 5 (512 params)</paper-item>
+        </paper-listbox>
+      </paper-dialog-scrollable>
+      <div>
+        <paper-button dialog-confirm>OK</paper-button>
+      </div>
+    </paper-dialog>
+
+    <div class="label-text">{{ label }}</div>
+    <paper-button
+       class="layers-button"
+       disabled="{{ disabled }}"
+       on-tap="handleLayersButton_">
+      {{ layersText_ }}
+    </paper-button>
+  </template>
+  <script src="underscore-min.js"></script>
+  <script>
+    var LAYER_ORDER = [
+      'conv1_1', 'relu1_1', 'conv1_2', 'relu1_2', 'pool1',
+      'conv2_1', 'relu2_1', 'conv2_2', 'relu2_2', 'pool2',
+      'conv3_1', 'relu3_1', 'conv3_2', 'relu3_2', 'conv3_3', 'relu3_3', 'conv3_4', 'relu3_4', 'pool3',
+      'conv4_1', 'relu4_1', 'conv4_2', 'relu4_2', 'conv4_3', 'relu4_3', 'conv4_4', 'relu4_4', 'pool4',
+      'conv5_1', 'relu5_1', 'conv5_2', 'relu5_2', 'conv5_3', 'relu5_3', 'conv5_4', 'relu5_4', 'pool5',
+    ];
+    (function() {
+      'use strict';
+      Polymer({
+        is: 'layer-picker',
+        properties: {
+          disabled: {
+            type: Boolean,
+            value: false,
+          },
+          label: {
+            type: String,
+            value: '',
+          },
+          layers: {
+            type: Array,
+            value: function() { return []; },
+            notify: true,
+          },
+          layersText_: {
+            type: String,
+            computed: 'computeLayersText_(layers.splices)',
+          },
+        },
+        observers: [
+          'layersChanged_(layers.splices)',
+        ],
+        computeLayersText_: function(changeRecord) {
+          return this.layers.join(', ');
+        },
+        handleLayersButton_: function() {
+          this.$.layersDialog.open();
+        },
+        layersChanged_: function(changeRecord) {
+          var sortedLayers = _.sortBy(this.layers, function(layer) {
+            return LAYER_ORDER.indexOf(layer);
+          });
+          if (!_.isEqual(this.layers, sortedLayers)) {
+            this.set('layers', sortedLayers);
+          }
+        },
+      });
+    })();
+  </script>
+</dom-module>
