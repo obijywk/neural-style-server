@@ -55,6 +55,12 @@ app.ws('/updates', function(ws, req) {
     var index = updateSockets.indexOf(ws);
     updateSockets.splice(index, 1);
   });
+  neuralStyleRenderer.getStatus(function(status) {
+    if (_.findIndex(updateSockets, ws) == -1) {
+      return;
+    }
+    ws.send(JSON.stringify({'type': 'status', 'data': status}));
+  });
   process.nextTick(function() {
     if (_.findIndex(updateSockets, ws) == -1) {
       return;
@@ -71,6 +77,10 @@ function broadcastUpdate(type, data) {
     ws.send(JSON.stringify({'type': type, 'data': data}));
   });
 }
+
+neuralStyleRenderer.statusEventEmitter.on('status', function(status) {
+  broadcastUpdate('status', status);
+});
 
 var server = app.listen(8000, function() {
   var host = server.address().address;

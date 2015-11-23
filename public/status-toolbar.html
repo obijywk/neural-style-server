@@ -1,0 +1,66 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+
+<dom-module id="status-toolbar">
+  <template>
+    <style>
+      .toolbar-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .status-section {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .vertical-text-column {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-left: 4px;
+        padding-right: 4px;
+        border-left: 1px solid white;
+      }
+    </style>
+  <div class="toolbar-content">
+    <div>Neural Style Server</div>
+    <div class="status-section">
+      <div class="vertical-text-column">
+        <span>queued</span>
+        <span>{{ status.queuedTasks }}</span>
+      </div>
+      <template is="dom-repeat" items="{{ status.gpus }}">
+        <div class="vertical-text-column">
+          <span>{{ item.utilization }}</span>
+          <span>{{ item.temperature }}</span>
+          <span>{{ item.power }}</span>
+        </div>
+      </template>
+    </div>
+  </div>
+  </template>
+  <script>
+    (function() {
+      'use strict';
+      Polymer({
+        is: 'status-toolbar',
+        properties: {
+          status: {
+            type: Object,
+            value: function() {
+              return {
+                'queuedTasks': 0,
+                'gpus': [],
+              };
+            },
+            notify: true,
+          },
+        },
+      });
+    })();
+  </script>
+</dom-module>
+
+

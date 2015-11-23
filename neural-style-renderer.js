@@ -2,6 +2,7 @@ var _ = require('underscore');
 var async = require('async');
 var childProcess = require('child_process');
 var config = require('config');
+var events = require('events');
 var fs = require('fs');
 var neuralStyleUtil = require('./neural-style-util');
 var path = require('path');
@@ -137,6 +138,7 @@ function runRender(task, callback) {
       task.state = exports.DONE;
     }
     runTaskCallback(task);
+    sendStatusEvent();
     callback();
   });
 }
@@ -191,6 +193,7 @@ function enqueueJob(id, settings, callback) {
     runTaskCallback(task);
     tasks.unshift(task);
     workqueue.push(task);
+    sendStatusEvent();
   });
 }
 exports.enqueueJob = enqueueJob;
@@ -198,3 +201,29 @@ exports.enqueueJob = enqueueJob;
 exports.getTaskStatuses = function() {
   return _.map(tasks, getTaskStatus);
 }
+
+exports.getStatus = function(callback) {
+  queryGpus(function(gpuInfo) {
+    var status = {
+      'queuedTasks': workqueue.length(),
+      'gpus': [],
+    };
+    _.each(gpuInfo.gpu, function(gpu) {
+      status.gpus.push({
+        'utilization': gpu.utilization[0].gpu_util[0],
+        'temperature': gpu.temperature[0].gpu_temp[0],
+        'power': gpu.power_readings[0].power_draw[0],
+      });
+    });
+    callback(status);
+  });
+}
+
+exports.statusEventEmitter = new events.EventEmitter();
+
+function sendStatusEvent() {
+  exports.getStatus(function(status) {
+    exports.statusEventEmitter.emit('status', status);
+  });
+}
+setInterval(sendStatusEvent, 15000);
