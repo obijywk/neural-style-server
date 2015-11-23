@@ -168,7 +168,7 @@ function enqueueJob(id, settings, callback) {
   settings = _.defaults(settings, DEFAULT_SETTINGS);
   async.parallel([
     function(cb) {
-      fs.writeFile(neuralStyleUtil.getSettingsPath(id), settings, cb);
+      fs.writeFile(neuralStyleUtil.getSettingsPath(id), JSON.stringify(settings), cb);
     },
     function(cb) {
       neuralStyleUtil.findImagePath(id, neuralStyleUtil.CONTENT, cb);
