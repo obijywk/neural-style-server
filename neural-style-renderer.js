@@ -12,22 +12,22 @@ var xml2js = require('xml2js');
 var NUM_PROGRESS_IMAGES = 10;
 
 function queryGpus(callback) {
-  var nvidiaSmi = childProcess.spawn(
-    'nvidia-smi',
-    ['-q', '-x']);
-  nvidiaSmi.on('exit', function(code) {
-    if (code != 0) {
-      util.log('nvidia-smi failed with code ' + code);
-      return callback({});
-    }
-    xml2js.parseString(nvidiaSmi.stdout.read(), function(err, data) {
+  var nvidiaSmi = childProcess.exec(
+    'nvidia-smi -q -x',
+    {maxBuffer: 1024 * 1024},
+    function(err, stdout, stderr) {
       if (err) {
-        util.log('failed to parse nvidia-smi output: ' + err);
+        util.log('nvidia-smi failed: ' + err + ' ' + stderr);
         return callback({});
       }
-      return callback(data.nvidia_smi_log);
+      xml2js.parseString(stdout, function(err, data) {
+        if (err) {
+          util.log('failed to parse nvidia-smi output: ' + err);
+          return callback({});
+        }
+        return callback(data.nvidia_smi_log);
+      });
     });
-  });
 }
 exports.queryGpus = queryGpus;
 
