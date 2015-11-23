@@ -7,10 +7,23 @@ var expressWs = require('express-ws');
 var morgan = require('morgan');
 var neuralStyleRenderer = require('./neural-style-renderer');
 var neuralStyleUtil = require('./neural-style-util');
+var passport = require('passport');
+var passportHttp = require('passport-http');
 
 var app = express();
 expressWs(app);
 app.use(morgan('short'));
+
+if (config.has('username') && config.has('password')) {
+  passport.use(new passportHttp.BasicStrategy(
+    function(username, password, callback) {
+      if (username != config.get('username') || password != config.get('password')) {
+        callback(null, false);
+      }
+      callback(null, {});
+    }));
+  app.use(passport.authenticate('basic', {session: false}));
+}
 
 app.use(express.static('public'));
 app.use('/bower_components', express.static(__dirname + '/bower_components'));
