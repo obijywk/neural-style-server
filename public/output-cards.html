@@ -1,5 +1,7 @@
 <link rel="import" href="bower_components/polymer/polymer.html">
 
+<link rel="import" href="bower_components/paper-button/paper-button.html">
+
 <link rel="import" href="output-card.html">
 
 <dom-module id="output-cards">
@@ -12,8 +14,13 @@
       }
     </style>
     <div class="output-card-list">
-      <template is="dom-repeat" items="{{ statusArray }}">
+      <template is="dom-repeat" items="{{ visibleStatuses_ }}">
         <output-card status="{{ item }}"></output-card>
+      </template>
+      <template is="dom-if" if="{{ moreStatuses_ }}">
+        <paper-button on-tap="showMoreImages_">
+          Show More Images
+        </paper-button>
       </template>
     </div>
   </template>
@@ -24,20 +31,41 @@
       Polymer({
         is: 'output-cards',
         properties: {
-          statusArray: {
+          allStatuses_: {
             type: Array,
             value: function() { return []; },
           },
+          numVisibleStatuses_: {
+            type: Number,
+            value: 10,
+          },
+          visibleStatuses_: {
+            type: Array,
+            computed: 'makeVisibleStatuses_(allStatuses_.*, numVisibleStatuses_)',
+          },
+          moreStatuses_: {
+            type: Boolean,
+            computed: 'makeMoreStatuses_(allStatuses_.*, numVisibleStatuses_)',
+          },
         },
         handleUpdate: function(status) {
-          var index = _.findIndex(this.statusArray, function(existingStatus) {
+          var index = _.findIndex(this.allStatuses_, function(existingStatus) {
             return existingStatus.id == status.id;
           });
           if (index == -1) {
-            this.unshift('statusArray', status);
+            this.unshift('allStatuses_', status);
           } else {
-            this.set('statusArray.' + index, status);
+            this.set('allStatuses_.' + index, status);
           }
+        },
+        makeVisibleStatuses_: function(changeRecord, numVisibleStatuses) {
+          return this.allStatuses_.slice(0, numVisibleStatuses);
+        },
+        makeMoreStatuses_: function(changeRecord, numVisibleStatuses) {
+          return this.allStatuses_.length > numVisibleStatuses;
+        },
+        showMoreImages_: function() {
+          this.set('numVisibleStatuses_', this.numVisibleStatuses_ + 10);
         },
       })
     })();
