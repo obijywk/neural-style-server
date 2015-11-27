@@ -33,11 +33,6 @@ exports.queryGpus = queryGpus;
 
 var gpuIndexes = [];
 
-exports.QUEUED = 'queued';
-exports.RUNNING = 'running';
-exports.DONE = 'done';
-exports.FAILED = 'failed';
-
 function getTaskStatus(task) {
   var status = {
     'id': task.id,
@@ -54,20 +49,16 @@ function getTaskStatus(task) {
   for (var i = saveIterStep; i < task.iter; i += saveIterStep) {
     status['outputUrls'].push(neuralStyleUtil.imagePathToUrl(outputPath + '_' + i + '.png'));
   }
-  if (task.state == exports.DONE) {
+  if (task.state == neuralStyleUtil.DONE) {
     status['outputUrls'].push(neuralStyleUtil.imagePathToUrl(outputPath + '.png'));
   }
 
   return status;
 }
 
-function runTaskCallback(task) {
-  task.callback(null, getTaskStatus(task));
-}
-
 function runRender(task, callback) {
-  task.state = exports.RUNNING;
-  runTaskCallback(task);
+  task.state = neuralStyleUtil.RUNNING;
+  sendTaskStatusEvent(task);
 
   var outputPath = neuralStyleUtil.getImagePathPrefix(task.id, neuralStyleUtil.OUTPUT);
   var printIterStep = task.settings.numIterations / 100;
@@ -124,7 +115,7 @@ function runRender(task, callback) {
     task.iter = getLatestIteration(stdout);
     if (task.iter > lastIter) {
       lastIter = task.iter;
-      runTaskCallback(task);
+      sendTaskStatusEvent(task);
     }
   });
 
@@ -132,12 +123,12 @@ function runRender(task, callback) {
     gpuIndexes.push(gpuIndex);
     if (code != 0) {
       util.log('neural_style failed for id ' + task.id + ' with code ' + code + '\n' + neuralStyle.stderr.read());
-      task.state = exports.FAILED;
+      task.state = neuralStyleUtil.FAILED;
     } else {
       util.log('neural_style done for id ' + task.id);
-      task.state = exports.DONE;
+      task.state = neuralStyleUtil.DONE;
     }
-    runTaskCallback(task);
+    sendTaskStatusEvent(task);
     sendStatusEvent();
     callback();
   });
@@ -148,6 +139,17 @@ var tasks = [];
 queryGpus(function(gpuInfo) {
   gpuIndexes = _.range(gpuInfo.attached_gpus[0]);
   workqueue = async.queue(runRender, gpuInfo.attached_gpus[0]);
+});
+
+neuralStyleUtil.getExistingTasks(function(err, existingTasks) {
+  if (err) {
+    util.log('Failed to find existing tasks: ' + err);
+    return;
+  }
+  tasks = tasks.concat(existingTasks);
+  _.each(existingTasks, function(task) {
+    sendTaskStatusEvent(task);
+  });
 });
 
 var DEFAULT_SETTINGS = {
@@ -164,7 +166,7 @@ var DEFAULT_SETTINGS = {
   'pooling': 'max',
 };
 
-function enqueueJob(id, settings, callback) {
+function enqueueJob(id, settings) {
   settings = _.defaults(settings, DEFAULT_SETTINGS);
   async.parallel([
     function(cb) {
@@ -177,22 +179,22 @@ function enqueueJob(id, settings, callback) {
       neuralStyleUtil.findImagePath(id, neuralStyleUtil.STYLE, cb);
     },
   ], function(err, results) {
-    if (err) {
-      callback(err);
-      return;
-    }
     var task = {
       'id': id,
-      'state': exports.QUEUED,
-      'callback': callback,
+      'state': neuralStyleUtil.QUEUED,
       'contentPath': results[1],
       'stylePath': results[2],
       'settings': settings,
       'iter': 0,
     };
-    runTaskCallback(task);
     tasks.unshift(task);
-    workqueue.push(task);
+    if (err) {
+      util.log(err);
+      task.state = neuralStyleUtil.FAILED;
+    } else {
+      workqueue.push(task);
+    }
+    sendTaskStatusEvent(task);
     sendStatusEvent();
   });
 }
@@ -219,11 +221,16 @@ exports.getStatus = function(callback) {
   });
 }
 
-exports.statusEventEmitter = new events.EventEmitter();
+exports.eventEmitter = new events.EventEmitter();
 
 function sendStatusEvent() {
   exports.getStatus(function(status) {
-    exports.statusEventEmitter.emit('status', status);
+    exports.eventEmitter.emit('status', status);
   });
 }
 setInterval(sendStatusEvent, 15000);
+
+function sendTaskStatusEvent(task) {
+  exports.eventEmitter.emit('render', getTaskStatus(task));
+}
+

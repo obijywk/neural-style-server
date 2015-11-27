@@ -51,13 +51,7 @@ app.post('/render/:id', jsonBodyParser, function(req, res) {
     return;
   }
   var settings = req.body;
-  neuralStyleRenderer.enqueueJob(req.params.id, settings, function(err, status) {
-    if (err) {
-      console.log(err);
-      return;
-    }
-    broadcastUpdate('render', status);
-  });
+  neuralStyleRenderer.enqueueJob(req.params.id, settings);
   res.end();
 });
 
@@ -91,7 +85,11 @@ function broadcastUpdate(type, data) {
   });
 }
 
-neuralStyleRenderer.statusEventEmitter.on('status', function(status) {
+neuralStyleRenderer.eventEmitter.on('render', function(taskStatus) {
+  broadcastUpdate('render', taskStatus);
+});
+
+neuralStyleRenderer.eventEmitter.on('status', function(status) {
   broadcastUpdate('status', status);
 });
 
