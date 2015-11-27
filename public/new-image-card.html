@@ -220,6 +220,30 @@
           xhr.setRequestHeader('Content-Type', 'application/json');
           xhr.send(JSON.stringify(this.$.renderSettings.settings));
         },
+        setSettings: function(settings) {
+          this.set('$.renderSettings.settings', settings);
+        },
+        setContentImage: function(imageUrl) {
+          this.setImage_(imageUrl, 'contentFile_', this.$.contentImagePreview);
+        },
+        setStyleImage: function(imageUrl) {
+          this.setImage_(imageUrl, 'styleFile_', this.$.styleImagePreview);
+        },
+        setImage_: function(imageUrl, fileProperty, imageElement) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', imageUrl);
+          xhr.responseType = 'blob';
+          xhr.onload = function() {
+            var blob = xhr.response;
+            this.set(fileProperty, blob);
+            var reader = new FileReader();
+            reader.onload = function(event) {
+              imageElement.src = event.target.result;
+            };
+            reader.readAsDataURL(blob);
+          }.bind(this);
+          xhr.send();
+        },
       });
     })();
   </script>

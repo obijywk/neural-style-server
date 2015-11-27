@@ -73,6 +73,10 @@
              on-tap="cancel_">
             Cancel
           </paper-button>
+          <paper-button
+             on-tap="copyToNewImage_">
+            Copy to New Image
+          </paper-button>
         </div>
       </div>
     </paper-card>
@@ -130,6 +134,16 @@
           var xhr = new XMLHttpRequest();
           xhr.open('POST', '/cancel/' + this.status.id);
           xhr.send();
+        },
+        copyToNewImage_: function() {
+          var settings = _.clone(this.status.settings);
+          settings.contentLayers = _.clone(this.status.settings.contentLayers);
+          settings.styleLayers = _.clone(this.status.settings.styleLayers);
+          this.fire('copyToNewImage', {
+            'settings': settings,
+            'contentUrl': this.status.contentUrl,
+            'styleUrl': this.status.styleUrl,
+          });
         },
       });
     })();

@@ -14,12 +14,12 @@
         width: 100%;
       }
     </style>
-    <paper-scroll-header-panel>
+    <paper-scroll-header-panel id="paperScrollHeaderPanel">
       <paper-toolbar>
         <status-toolbar id="statusToolbar"></status-toolbar>
       </paper-toolbar>
       <div>
-        <new-image-card></new-image-card>
+        <new-image-card id="newImageCard"></new-image-card>
         <output-cards id="outputCards"></output-cards>
       </div>
     </paper-scroll-header-panel>
@@ -30,6 +30,9 @@
       'use strict';
       Polymer({
         is: 'main-page',
+        listeners: {
+          'copyToNewImage': 'handleCopyToNewImage_',
+        },
         attached: function() {
           var location = window.location;
           var wsUrl = 'ws://' + location.hostname + ':' + location.port + '/updates';
@@ -44,6 +47,12 @@
           if (msg.type == 'status') {
             this.$.statusToolbar.status = msg.data;
           }
+        },
+        handleCopyToNewImage_: function(event) {
+          this.$.newImageCard.setSettings(event.detail.settings);
+          this.$.newImageCard.setContentImage(event.detail.contentUrl);
+          this.$.newImageCard.setStyleImage(event.detail.styleUrl);
+          this.$.paperScrollHeaderPanel.scrollToTop();
         },
       })
     })();
