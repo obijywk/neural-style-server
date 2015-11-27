@@ -57,6 +57,9 @@ function getTaskStatus(task) {
 }
 
 function runRender(task, callback) {
+  if (task.state == neuralStyleUtil.CANCELLED) {
+    return callback();
+  }
   task.state = neuralStyleUtil.RUNNING;
   sendTaskStatusEvent(task);
 
@@ -117,13 +120,18 @@ function runRender(task, callback) {
       lastIter = task.iter;
       sendTaskStatusEvent(task);
     }
+    if (task.state == neuralStyleUtil.CANCELLED) {
+      neuralStyle.kill();
+    }
   });
 
   neuralStyle.on('exit', function(code) {
     gpuIndexes.push(gpuIndex);
     if (code != 0) {
       util.log('neural_style failed for id ' + task.id + ' with code ' + code + '\n' + neuralStyle.stderr.read());
-      task.state = neuralStyleUtil.FAILED;
+      if (task.state != neuralStyleUtil.CANCELLED) {
+        task.state = neuralStyleUtil.FAILED;
+      }
     } else {
       util.log('neural_style done for id ' + task.id);
       task.state = neuralStyleUtil.DONE;
@@ -166,7 +174,7 @@ var DEFAULT_SETTINGS = {
   'pooling': 'max',
 };
 
-function enqueueJob(id, settings) {
+exports.enqueueJob = function(id, settings) {
   settings = _.defaults(settings, DEFAULT_SETTINGS);
   async.parallel([
     function(cb) {
@@ -198,7 +206,16 @@ function enqueueJob(id, settings) {
     sendStatusEvent();
   });
 }
-exports.enqueueJob = enqueueJob;
+
+exports.cancelJob = function(id) {
+  _.each(tasks, function(task) {
+    if (task.id == id &&
+        (task.state == neuralStyleUtil.QUEUED || task.state == neuralStyleUtil.RUNNING)) {
+      task.state = neuralStyleUtil.CANCELLED;
+      sendTaskStatusEvent(task);
+    }
+  });
+}
 
 exports.getTaskStatuses = function() {
   return _.map(tasks, getTaskStatus);

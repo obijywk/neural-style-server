@@ -1,6 +1,7 @@
 <link rel="import" href="bower_components/polymer/polymer.html">
 
 <link rel="import" href="bower_components/iron-image/iron-image.html">
+<link rel="import" href="bower_components/paper-button/paper-button.html">
 <link rel="import" href="bower_components/paper-card/paper-card.html">
 <link rel="import" href="bower_components/paper-slider/paper-slider.html">
 
@@ -9,7 +10,7 @@
 <dom-module id="output-card">
   <template>
     <style>
-      .output-paper-card {
+      .output-card-content {
         display: flex;
         flex-direction: row;
         align-items: center;
@@ -35,29 +36,45 @@
         flex-direction: column;
         align-items: center;
       }
+
+      .action-buttons {
+        display: flex;
+        flex-direction: row;
+      }
     </style>
-    <paper-card class="output-paper-card">
-      <div class="source-images-column">
-        <iron-image class="source-image" sizing="contain" src="{{ status.contentUrl }}">
-        </iron-image>
-        <iron-image class="source-image" sizing="contain" src="{{ status.styleUrl }}">
-        </iron-image>
-      </div>
-      <div class="output-column">
-        <div>{{ status.state }}</div>
-        <div>
-          <span>{{ status.iter }}</span>
-          /
-          <span>{{ status.settings.numIterations }}</span>
+    <paper-card>
+      <div class="output-card-content">
+        <div class="source-images-column">
+          <iron-image class="source-image" sizing="contain" src="{{ status.contentUrl }}">
+          </iron-image>
+          <iron-image class="source-image" sizing="contain" src="{{ status.styleUrl }}">
+          </iron-image>
         </div>
-        <iron-image src="{{ outputUrl }}"></iron-image>
-        <paper-slider
-           min="0"
-           max="{{ outputUrlIndexMax_ }}"
-           value="{{ outputUrlIndex_ }}">
-        </paper-slider>
+        <div class="output-column">
+          <div>{{ status.state }}</div>
+          <div>
+            <span>{{ status.iter }}</span>
+            /
+            <span>{{ status.settings.numIterations }}</span>
+          </div>
+          <iron-image src="{{ outputUrl }}"></iron-image>
+          <paper-slider
+             min="0"
+             max="{{ outputUrlIndexMax_ }}"
+             value="{{ outputUrlIndex_ }}">
+          </paper-slider>
+        </div>
+        <render-settings disabled="true" settings="{{ status.settings }}"></render-settings>
       </div>
-      <render-settings disabled="true" settings="{{ status.settings }}"></render-settings>
+      <div class="card-actions">
+        <div class="action-buttons">
+          <paper-button
+             disabled="{{ cancelButtonDisabled_ }}"
+             on-tap="cancel_">
+            Cancel
+          </paper-button>
+        </div>
+      </div>
     </paper-card>
   </template>
   <script src="underscore-min.js"></script>
@@ -84,6 +101,10 @@
             type: String,
             computed: 'makeOutputUrl_(status.outputUrls, outputUrlIndex_)',
           },
+          cancelButtonDisabled_: {
+            type: Boolean,
+            computed: 'makeCancelButtonDisabled_(status.state)',
+          },
         },
         statusChanged_: function(newStatus, oldStatus) {
           if (oldStatus == null) {
@@ -101,6 +122,14 @@
             return '';
           }
           return outputUrls[outputUrlIndex];
+        },
+        makeCancelButtonDisabled_: function(state) {
+          return state != 'queued' && state != 'running';
+        },
+        cancel_: function() {
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', '/cancel/' + this.status.id);
+          xhr.send();
         },
       });
     })();

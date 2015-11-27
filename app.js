@@ -55,6 +55,15 @@ app.post('/render/:id', jsonBodyParser, function(req, res) {
   res.end();
 });
 
+app.post('/cancel/:id', function(req, res) {
+  if (!neuralStyleUtil.validateId(req.params.id)) {
+    res.status(400).send('invalid id');
+    return;
+  }
+  neuralStyleRenderer.cancelJob(req.params.id);
+  res.end();
+});
+
 var updateSockets = [];
 app.ws('/updates', function(ws, req) {
   updateSockets.push(ws);

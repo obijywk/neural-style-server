@@ -21,6 +21,7 @@ exports.QUEUED = 'queued';
 exports.RUNNING = 'running';
 exports.DONE = 'done';
 exports.FAILED = 'failed';
+exports.CANCELLED = 'cancelled';
 
 exports.getExistingTasks = function(callback) {
   fs.readdir(config.get('dataPath'), function(err, files) {
