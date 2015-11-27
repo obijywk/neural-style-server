@@ -116,12 +116,18 @@
           'layersChanged_(layers.splices)',
         ],
         computeLayersText_: function(changeRecord) {
+          if (this.layers === undefined || this.layers === null) {
+            return '';
+          }
           return this.layers.join(', ');
         },
         handleLayersButton_: function() {
           this.$.layersDialog.open();
         },
         layersChanged_: function(changeRecord) {
+          if (this.layers === undefined || this.layers === null) {
+            return;
+          }
           var sortedLayers = _.sortBy(this.layers, function(layer) {
             return LAYER_ORDER.indexOf(layer);
           });

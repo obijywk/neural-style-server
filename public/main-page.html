@@ -1,10 +1,11 @@
 <link rel="import" href="bower_components/polymer/polymer.html">
 
+<link rel="import" href="bower_components/iron-list/iron-list.html">
 <link rel="import" href="bower_components/paper-scroll-header-panel/paper-scroll-header-panel.html">
 <link rel="import" href="bower_components/paper-toolbar/paper-toolbar.html">
 
 <link rel="import" href="new-image-card.html">
-<link rel="import" href="output-cards.html">
+<link rel="import" href="output-card.html">
 <link rel="import" href="status-toolbar.html">
 
 <dom-module id="main-page">
@@ -13,15 +14,30 @@
       status-toolbar {
         width: 100%;
       }
+
+      .card-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
     </style>
     <paper-scroll-header-panel id="paperScrollHeaderPanel">
       <paper-toolbar>
         <status-toolbar id="statusToolbar"></status-toolbar>
       </paper-toolbar>
-      <div>
-        <new-image-card id="newImageCard"></new-image-card>
-        <output-cards id="outputCards"></output-cards>
-      </div>
+
+      <iron-list items="{{ cards_ }}">
+        <template>
+          <div class="card-container">
+            <template is="dom-if" if="{{ item.newImageCard }}">
+              <new-image-card id="newImageCard"></new-image-card>
+            </template>
+            <template is="dom-if" if="{{ item.outputCard }}">
+              <output-card status="{{ item.status }}"></output-card>
+            </template>
+          </div>
+        </template>
+      </iron-list>
     </paper-scroll-header-panel>
   </template>
   <script src="underscore-min.js"></script>
@@ -30,6 +46,16 @@
       'use strict';
       Polymer({
         is: 'main-page',
+        properties: {
+          cards_: {
+            type: Array,
+            computed: 'makeCards_(statuses_.*)',
+          },
+          statuses_: {
+            type: Array,
+            value: function() { return []; },
+          },
+        },
         listeners: {
           'copyToNewImage': 'handleCopyToNewImage_',
         },
@@ -39,20 +65,50 @@
           this.updatesSocket_ = new WebSocket(wsUrl);
           this.updatesSocket_.onmessage = this.handleUpdate_.bind(this);
         },
+        makeCards_: function() {
+          var cards = [{
+            newImageCard: true,
+            outputCard: false,
+          }];
+          _.each(this.statuses_, function(status) {
+            cards.push({
+              newImageCard: false,
+              outputCard: true,
+              status: status,
+            });
+          });
+          return cards;
+        },
         handleUpdate_: function(event) {
           var msg = JSON.parse(event.data);
           if (msg.type == 'render') {
-            this.$.outputCards.handleUpdate(msg.data);
+            this.handleStatusUpdate_(msg.data);
           }
           if (msg.type == 'status') {
             this.$.statusToolbar.status = msg.data;
           }
         },
+        handleStatusUpdate_: function(status) {
+          // Give the iron-list pool size increaser a chance to run.
+          this.async(function() {
+            var index = _.findIndex(this.statuses_, function(existingStatus) {
+              return existingStatus.id == status.id;
+            });
+            if (index == -1) {
+              this.unshift('statuses_', status);
+            } else {
+              this.set('statuses_.' + index, status);
+            }
+          }.bind(this), 1);
+        },
         handleCopyToNewImage_: function(event) {
-          this.$.newImageCard.setSettings(event.detail.settings);
-          this.$.newImageCard.setContentImage(event.detail.contentUrl);
-          this.$.newImageCard.setStyleImage(event.detail.styleUrl);
           this.$.paperScrollHeaderPanel.scrollToTop();
+          // Give the physical top card a chance to re-bind to the new image card.
+          this.async(function() {
+            this.$.newImageCard.setSettings(event.detail.settings);
+            this.$.newImageCard.setContentImage(event.detail.contentUrl);
+            this.$.newImageCard.setStyleImage(event.detail.styleUrl);
+          }, 1);
         },
       })
     })();

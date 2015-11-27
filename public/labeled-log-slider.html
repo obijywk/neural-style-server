@@ -83,12 +83,21 @@
           },
         },
         computeLinear_: function(logValue) {
+          if (logValue === undefined || logValue === null) {
+            return 0;
+          }
           return Math.log(logValue) / Math.log(10);
         },
         computeValueText_: function(value) {
+          if (value === undefined || value === null) {
+            return '';
+          }
           return value.toPrecision(3);
         },
         valueChanged_: function(newValue, oldValue) {
+          if (newValue === undefined || newValue === null) {
+            return;
+          }
           var linearValue = Math.log(newValue) / Math.log(10);
           var scaledLinearValue = Math.round(50 * (linearValue - this.linearMin_) / (this.linearMax_ - this.linearMin_));
           if (scaledLinearValue != this.sliderValue) {
@@ -96,6 +105,9 @@
           }
         },
         sliderValueChanged_: function(newSliderValue, oldSliderValue) {
+          if (newSliderValue === undefined || newSliderValue === null) {
+            return;
+          }
           var linearValue = (newSliderValue / 50) * (this.linearMax_ - this.linearMin_) + this.linearMin_;
           var logValue = Math.pow(10, linearValue);
           this.set('value', logValue);
