@@ -24,3 +24,6 @@ To launch neural-style-server, run:
 ```
 nodejs app.js
 ```
+
+## Screenshot
+<img src="https://raw.githubusercontent.com/obijywk/neural-style-server/master/screenshots/screenshot.png">
