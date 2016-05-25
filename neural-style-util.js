@@ -4,6 +4,7 @@ var config = require('config');
 var fs = require('fs');
 var imagemagick = require('imagemagick');
 var path = require('path');
+var exec = require('child_process').exec;
 
 try {
   fs.mkdirSync(config.get('dataPath'));
@@ -97,8 +98,8 @@ exports.getImagePathPrefix = function(id, purpose) {
     id + '_' + purpose);
 }
 
-exports.saveImage = function(id, purpose, data, callback) {
-  var outputPath = exports.getImagePathPrefix(id, purpose);
+exports.saveImage = function(id, purpose, index, data, callback) {
+  var outputPath = exports.getImagePathPrefix(id, purpose) + '_' + index;
   async.waterfall([
     function(cb) {
       fs.writeFile(outputPath, data, cb);
@@ -123,35 +124,12 @@ exports.saveImage = function(id, purpose, data, callback) {
 }
 
 exports.findImagePath = function(id, purpose, callback) {
-  var pathPrefix = exports.getImagePathPrefix(id, purpose);
-  function makeExtensionCheck(ext) {
-    return function(cb) {
-      var path = pathPrefix + '.' + ext;
-      fs.stat(path, function(err, stats) {
-        if (!err) {
-          cb(null, path);
-        } else {
-          cb(null, null);
-        }
-      });
-    };
-  }
-  async.parallel([
-    makeExtensionCheck('jpg'),
-    makeExtensionCheck('png'),
-  ], function(err, results) {
-    if (err) {
-      callback(err);
-      return;
-    }
-    var result = _.find(results, function(result) {
-      return result != null;
-    });
-    if (result) {
-      callback(null, result);
-    } else {
-      callback(new Error('Missing image with path prefix ' + pathPrefix));
-    }
+  var fileNamePrefix = id + '_' + purpose;
+  exec("find "+config.get('dataPath')+" -name '"+fileNamePrefix+"*'", function(error, stdout, stderr){
+    var arr = stdout.split('\n');
+    arr.pop();
+    var str = arr.join(',');
+    return callback(error, str);
   });
 }
 
