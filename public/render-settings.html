@@ -70,6 +70,19 @@
             <paper-item data-value="max">max</paper-item>
           </paper-listbox>
         </paper-dropdown-menu>
+        <paper-dropdown-menu label="Optimizer" disabled="{{ disabled }}">
+          <paper-listbox class="dropdown-content" attr-for-selected="data-value" selected="{{ settings.optimizer }}">
+            <paper-item data-value="adam">ADAM</paper-item>
+            <paper-item data-value="lbfgs">L-BFGS</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+        <labeled-log-slider
+           label="Learning Rate"
+           value="{{ settings.learningRate }}"
+           min="1"
+           max="20"
+           disabled="{{ disabled }}">
+        </labeled-log-slider>
         <layer-picker
            label="Content Layers"
            layers="{{ settings.contentLayers }}"
@@ -130,6 +143,8 @@
         'styleLayers': ['relu1_1', 'relu2_1', 'relu3_1', 'relu4_1', 'relu5_1'],
         'styleScale': 1.0,
         'pooling': 'max',
+        'optimizer': 'adam',
+        'learningRate': 10.0,
       };
     }
 

@@ -83,10 +83,13 @@ function runRender(task, callback) {
     '-style_layers', task.settings.styleLayers.join(','),
     '-style_scale', task.settings.styleScale,
     '-pooling', task.settings.pooling,
+    '-optimizer', task.settings.optimizer,
+    '-learning_rate', task.settings.learningRate,
     '-output_image', outputPath + '.png',
     '-print_iter', printIterStep,
     '-save_iter', saveIterStep,
     '-backend', 'cudnn',
+    '-cudnn_autotune',
   ];
   if (task.settings.normalizeGradients) {
     params.push('-normalize_gradients');
@@ -172,6 +175,8 @@ var DEFAULT_SETTINGS = {
   'styleLayers': ['relu1_1', 'relu2_1', 'relu3_1', 'relu4_1', 'relu5_1'],
   'styleScale': 1.0,
   'pooling': 'max',
+  'optimizer': 'adam',
+  'learningRate': 10.0,
 };
 
 exports.enqueueJob = function(id, settings) {
@@ -250,4 +255,3 @@ setInterval(sendStatusEvent, 15000);
 function sendTaskStatusEvent(task) {
   exports.eventEmitter.emit('render', getTaskStatus(task));
 }
-
