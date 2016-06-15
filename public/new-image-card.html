@@ -242,7 +242,7 @@
           xhr.responseType = 'blob';
           xhr.onload = function() {
             var blob = xhr.response;
-            this.set(fileProperty, blob);
+            this.set(fileProperty, [blob]);
             var reader = new FileReader();
             reader.onload = function(event) {
               imageElement.src = event.target.result;
