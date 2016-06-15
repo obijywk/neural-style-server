@@ -125,11 +125,16 @@ exports.saveImage = function(id, purpose, index, data, callback) {
 
 exports.findImagePath = function(id, purpose, callback) {
   var fileNamePrefix = id + '_' + purpose;
-  exec("find "+config.get('dataPath')+" -name '"+fileNamePrefix+"*'", function(error, stdout, stderr){
-    var arr = stdout.split('\n');
-    arr.pop();
-    var str = arr.join(',');
-    return callback(error, str);
+  var dataPath = config.get('dataPath');
+  fs.readdir(dataPath, function(err, results) {
+    var matches = results.filter(function(fileName) {
+      if (fileName.indexOf(fileNamePrefix) > -1) return true;
+      return false;
+    });
+    matches = matches.map(function(fileName) {
+      return dataPath + fileName;
+    });
+    return callback(err, matches.join(','));
   });
 }
 
