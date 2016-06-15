@@ -4,7 +4,6 @@ var config = require('config');
 var fs = require('fs');
 var imagemagick = require('imagemagick');
 var path = require('path');
-var exec = require('child_process').exec;
 
 try {
   fs.mkdirSync(config.get('dataPath'));
@@ -127,10 +126,18 @@ exports.findImagePath = function(id, purpose, callback) {
   var fileNamePrefix = id + '_' + purpose;
   var dataPath = config.get('dataPath');
   fs.readdir(dataPath, function(err, results) {
+    if (err) {
+      callback(err);
+      return;
+    }
     var matches = results.filter(function(fileName) {
-      if (fileName.indexOf(fileNamePrefix) > -1) return true;
+      if (fileName.indexOf(fileNamePrefix) == 0) return true;
       return false;
     });
+    if (matches.length == 0) {
+      callback(new Error('Missing image with path prefix ' + fileNamePrefix));
+      return;
+    }
     matches = matches.map(function(fileName) {
       return dataPath + fileName;
     });

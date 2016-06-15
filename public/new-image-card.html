@@ -138,7 +138,7 @@
           var progress;
           if (contentFiles.length + styleFiles.length == 0) {
             progress = 0;
-          } else{
+          } else {
             progress = 100 * (contentUploadProgress + styleUploadProgress) / (contentFiles.length + styleFiles.length);
           }
           return progress;
@@ -176,6 +176,7 @@
           this.handleFileInput_('styleFiles_', this.$.styleFileInput.files, this.$.styleImagePreview);
         },
         handleFileInput_: function(fileProperty, files, imageElement) {
+          if (files.length == 0) return;
           this.set(fileProperty, []);
           for (var i = 0; i < files.length; i++) {
             if (!files[i].type.startsWith('image/')) {
