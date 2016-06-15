@@ -97,11 +97,11 @@
             type: String,
             value: null,
           },
-          contentFile_: {
+          contentFiles_: {
             type: Array,
             value: function() { return []; },
           },
-          styleFile_: {
+          styleFiles_: {
             type: Array,
             value: function() { return []; },
           },
@@ -127,21 +127,24 @@
           },
           uploadProgress_: {
             type: Number,
-            computed: 'computeUploadProgress_(contentUploadProgress_, styleUploadProgress_, contentFile_, styleFile_)',
+            computed: 'computeUploadProgress_(contentUploadProgress_, styleUploadProgress_, contentFiles_, styleFiles_)',
           },
           startButtonDisabled_: {
             type: Boolean,
-            computed: 'computeStartButtonDisabled_(contentFile_, styleFile_, uploading_)',
+            computed: 'computeStartButtonDisabled_(contentFiles_, styleFiles_, uploading_)',
           },
         },
-        computeUploadProgress_: function(contentUploadProgress, styleUploadProgress, contentFile, styleFile) {
+        computeUploadProgress_: function(contentUploadProgress, styleUploadProgress, contentFiles, styleFiles) {
           var progress;
-          if (contentFile.length + styleFile.length == 0) progress = 0;
-          else progress = 100 * (contentUploadProgress + styleUploadProgress) / (contentFile.length + styleFile.length);
+          if (contentFiles.length + styleFiles.length == 0) {
+            progress = 0;
+          } else{
+            progress = 100 * (contentUploadProgress + styleUploadProgress) / (contentFiles.length + styleFiles.length);
+          }
           return progress;
         },
-        computeStartButtonDisabled_: function(contentFile, styleFile, uploading) {
-          return !contentFile.length || !styleFile.length || uploading;
+        computeStartButtonDisabled_: function(contentFiles, styleFiles, uploading) {
+          return !contentFiles.length || !styleFiles.length || uploading;
         },
         finishUpload_: function() {
           this.set('uploading_', false);
@@ -155,9 +158,9 @@
         reset_: function() {
           this.finishUpload_();
           this.$.renderSettings.reset();
-          this.set('contentFile_', []);
+          this.set('contentFiles_', []);
           this.$.contentImagePreview.src = '';
-          this.set('styleFile_', []);
+          this.set('styleFiles_', []);
           this.$.styleImagePreview.src = '';
         },
         chooseContentImage_: function() {
@@ -167,18 +170,18 @@
           this.$.styleFileInput.click();
         },
         contentFileChanged_: function() {
-          this.handleFileInput_('contentFile_', this.$.contentFileInput.files, this.$.contentImagePreview);
+          this.handleFileInput_('contentFiles_', this.$.contentFileInput.files, this.$.contentImagePreview);
         },
         styleFileChanged_: function() {
-          this.handleFileInput_('styleFile_', this.$.styleFileInput.files, this.$.styleImagePreview);
+          this.handleFileInput_('styleFiles_', this.$.styleFileInput.files, this.$.styleImagePreview);
         },
         handleFileInput_: function(fileProperty, files, imageElement) {
+          this.set(fileProperty, []);
           for (var i = 0; i < files.length; i++) {
             if (!files[i].type.startsWith('image/')) {
               return;
             }
           }
-          this.set(fileProperty, []);
           this.set(fileProperty, files);
           var reader = new FileReader();
           reader.onload = function(event) {
@@ -192,10 +195,10 @@
           this.set('id_', Math.round(Math.random() * Math.pow(10, 16)));
           this.set('contentUploadProgress_', 0);
           this.set('styleUploadProgress_', 0);
-          _.each(this.contentFile_, function(file, i, arr){
+          _.each(this.contentFiles_, function(file, i, arr) {
             this.uploadImage_(file, i, arr.length, 'content');
           }, this);
-          _.each(this.styleFile_, function(file, i, arr){
+          _.each(this.styleFiles_, function(file, i, arr) {
             this.uploadImage_(file, i, arr.length, 'style');
           }, this);
         },
@@ -227,10 +230,10 @@
           this.set('$.renderSettings.settings', settings);
         },
         setContentImage: function(imageUrl) {
-          this.setImage_(imageUrl, 'contentFile_', this.$.contentImagePreview);
+          this.setImage_(imageUrl, 'contentFiles_', this.$.contentImagePreview);
         },
         setStyleImage: function(imageUrl) {
-          this.setImage_(imageUrl, 'styleFile_', this.$.styleImagePreview);
+          this.setImage_(imageUrl, 'styleFiles_', this.$.styleImagePreview);
         },
         setImage_: function(imageUrl, fileProperty, imageElement) {
           var xhr = new XMLHttpRequest();
