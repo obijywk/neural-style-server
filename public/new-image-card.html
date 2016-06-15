@@ -61,6 +61,7 @@
           <iron-image id="styleImagePreview" class="input-image" sizing="contain"></iron-image>
           <input
              type="file"
+             multiple="true"
              id="styleFileInput"
              class="hidden"
              accept="image/*"
@@ -96,13 +97,13 @@
             type: String,
             value: null,
           },
-          contentFile_: {
-            type: Object,
-            value: null,
+          contentFiles_: {
+            type: Array,
+            value: function() { return []; },
           },
-          styleFile_: {
-            type: Object,
-            value: null,
+          styleFiles_: {
+            type: Array,
+            value: function() { return []; },
           },
           uploading_: {
             type: Boolean,
@@ -126,18 +127,24 @@
           },
           uploadProgress_: {
             type: Number,
-            computed: 'computeUploadProgress_(contentUploadProgress_, styleUploadProgress_)',
+            computed: 'computeUploadProgress_(contentUploadProgress_, styleUploadProgress_, contentFiles_, styleFiles_)',
           },
           startButtonDisabled_: {
             type: Boolean,
-            computed: 'computeStartButtonDisabled_(contentFile_, styleFile_, uploading_)',
+            computed: 'computeStartButtonDisabled_(contentFiles_, styleFiles_, uploading_)',
           },
         },
-        computeUploadProgress_: function(contentUploadProgress, styleUploadProgress) {
-          return (contentUploadProgress + styleUploadProgress) / 2;
+        computeUploadProgress_: function(contentUploadProgress, styleUploadProgress, contentFiles, styleFiles) {
+          var progress;
+          if (contentFiles.length + styleFiles.length == 0) {
+            progress = 0;
+          } else {
+            progress = 100 * (contentUploadProgress + styleUploadProgress) / (contentFiles.length + styleFiles.length);
+          }
+          return progress;
         },
-        computeStartButtonDisabled_: function(contentFile, styleFile, uploading) {
-          return contentFile == null || styleFile == null || uploading;
+        computeStartButtonDisabled_: function(contentFiles, styleFiles, uploading) {
+          return !contentFiles.length || !styleFiles.length || uploading;
         },
         finishUpload_: function() {
           this.set('uploading_', false);
@@ -151,9 +158,9 @@
         reset_: function() {
           this.finishUpload_();
           this.$.renderSettings.reset();
-          this.set('contentFile_', null);
+          this.set('contentFiles_', []);
           this.$.contentImagePreview.src = '';
-          this.set('styleFile_', null);
+          this.set('styleFiles_', []);
           this.$.styleImagePreview.src = '';
         },
         chooseContentImage_: function() {
@@ -163,20 +170,20 @@
           this.$.styleFileInput.click();
         },
         contentFileChanged_: function() {
-          this.handleFileInput_('contentFile_', this.$.contentFileInput.files, this.$.contentImagePreview);
+          this.handleFileInput_('contentFiles_', this.$.contentFileInput.files, this.$.contentImagePreview);
         },
         styleFileChanged_: function() {
-          this.handleFileInput_('styleFile_', this.$.styleFileInput.files, this.$.styleImagePreview);
+          this.handleFileInput_('styleFiles_', this.$.styleFileInput.files, this.$.styleImagePreview);
         },
         handleFileInput_: function(fileProperty, files, imageElement) {
-          this.set(fileProperty, null);
-          if (files.length != 1) {
-            return;
+          if (files.length == 0) return;
+          this.set(fileProperty, []);
+          for (var i = 0; i < files.length; i++) {
+            if (!files[i].type.startsWith('image/')) {
+              return;
+            }
           }
-          if (!files[0].type.startsWith('image/')) {
-            return;
-          }
-          this.set(fileProperty, files[0]);
+          this.set(fileProperty, files);
           var reader = new FileReader();
           reader.onload = function(event) {
             imageElement.src = event.target.result;
@@ -187,26 +194,26 @@
           this.set('uploading_', true);
           this.$.uploadProgress.classList.remove('hidden');
           this.set('id_', Math.round(Math.random() * Math.pow(10, 16)));
-          this.uploadImage_(this.contentFile_, 'content');
-          this.uploadImage_(this.styleFile_, 'style');
+          this.set('contentUploadProgress_', 0);
+          this.set('styleUploadProgress_', 0);
+          _.each(this.contentFiles_, function(file, i, arr) {
+            this.uploadImage_(file, i, arr.length, 'content');
+          }, this);
+          _.each(this.styleFiles_, function(file, i, arr) {
+            this.uploadImage_(file, i, arr.length, 'style');
+          }, this);
         },
-        uploadImage_: function(file, purpose) {
+        uploadImage_: function(file, index, fileCount, purpose) {
           var xhr = new XMLHttpRequest();
-          xhr.upload.addEventListener('progress', function(event) {
-            if (event.lengthComputable) {
-              var percentage = Math.round((event.loaded * 100) / event.total);
-              this.set(purpose + 'UploadProgress_', percentage);
-            }
-          }.bind(this), false);
           xhr.addEventListener('load', function(event) {
-            this.set(purpose + 'UploadProgress_', 100);
-            this.set(purpose + 'UploadDone_', true);
+            this.set(purpose + 'UploadProgress_', this[purpose + 'UploadProgress_'] + 1);
+            if (this[purpose + 'UploadProgress_'] == fileCount) this.set(purpose + 'UploadDone_', true);
             if (this.contentUploadDone_ && this.styleUploadDone_) {
               this.render_();
               this.finishUpload_();
             }
           }.bind(this), false);
-          xhr.open('POST', '/upload/' + this.id_ + '/' + purpose);
+          xhr.open('POST', '/upload/' + this.id_ + '/' + purpose + '/' + index);
           xhr.setRequestHeader('Content-Type', 'application/octet-stream');
           var reader = new FileReader();
           reader.onload = function(event) {
@@ -224,10 +231,10 @@
           this.set('$.renderSettings.settings', settings);
         },
         setContentImage: function(imageUrl) {
-          this.setImage_(imageUrl, 'contentFile_', this.$.contentImagePreview);
+          this.setImage_(imageUrl, 'contentFiles_', this.$.contentImagePreview);
         },
         setStyleImage: function(imageUrl) {
-          this.setImage_(imageUrl, 'styleFile_', this.$.styleImagePreview);
+          this.setImage_(imageUrl, 'styleFiles_', this.$.styleImagePreview);
         },
         setImage_: function(imageUrl, fileProperty, imageElement) {
           var xhr = new XMLHttpRequest();
@@ -235,7 +242,7 @@
           xhr.responseType = 'blob';
           xhr.onload = function() {
             var blob = xhr.response;
-            this.set(fileProperty, blob);
+            this.set(fileProperty, [blob]);
             var reader = new FileReader();
             reader.onload = function(event) {
               imageElement.src = event.target.result;

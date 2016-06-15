@@ -30,12 +30,12 @@ app.use('/bower_components', express.static(__dirname + '/bower_components'));
 app.use('/data', express.static(config.get('dataPath')));
 
 var rawBodyParser = bodyParser.raw({limit: '10mb'});
-app.post('/upload/:id/:purpose', rawBodyParser, function(req, res) {
+app.post('/upload/:id/:purpose/:index', rawBodyParser, function(req, res) {
   if (!neuralStyleUtil.validateId(req.params.id)) {
     res.status(400).send('invalid id');
     return;
   }
-  neuralStyleUtil.saveImage(req.params.id, req.params.purpose, req.body, function(err) {
+  neuralStyleUtil.saveImage(req.params.id, req.params.purpose, req.params.index, req.body, function(err) {
     if (err) {
       res.status(500).send(err);
       return;

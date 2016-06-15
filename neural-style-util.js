@@ -97,8 +97,8 @@ exports.getImagePathPrefix = function(id, purpose) {
     id + '_' + purpose);
 }
 
-exports.saveImage = function(id, purpose, data, callback) {
-  var outputPath = exports.getImagePathPrefix(id, purpose);
+exports.saveImage = function(id, purpose, index, data, callback) {
+  var outputPath = exports.getImagePathPrefix(id, purpose) + '_' + index;
   async.waterfall([
     function(cb) {
       fs.writeFile(outputPath, data, cb);
@@ -123,35 +123,25 @@ exports.saveImage = function(id, purpose, data, callback) {
 }
 
 exports.findImagePath = function(id, purpose, callback) {
-  var pathPrefix = exports.getImagePathPrefix(id, purpose);
-  function makeExtensionCheck(ext) {
-    return function(cb) {
-      var path = pathPrefix + '.' + ext;
-      fs.stat(path, function(err, stats) {
-        if (!err) {
-          cb(null, path);
-        } else {
-          cb(null, null);
-        }
-      });
-    };
-  }
-  async.parallel([
-    makeExtensionCheck('jpg'),
-    makeExtensionCheck('png'),
-  ], function(err, results) {
+  var fileNamePrefix = id + '_' + purpose;
+  var dataPath = config.get('dataPath');
+  fs.readdir(dataPath, function(err, results) {
     if (err) {
       callback(err);
       return;
     }
-    var result = _.find(results, function(result) {
-      return result != null;
+    var matches = results.filter(function(fileName) {
+      if (fileName.indexOf(fileNamePrefix) == 0) return true;
+      return false;
     });
-    if (result) {
-      callback(null, result);
-    } else {
-      callback(new Error('Missing image with path prefix ' + pathPrefix));
+    if (matches.length == 0) {
+      callback(new Error('Missing image with path prefix ' + fileNamePrefix));
+      return;
     }
+    matches = matches.map(function(fileName) {
+      return dataPath + fileName;
+    });
+    return callback(err, matches.join(','));
   });
 }
 
